@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Upload, Download, FileSpreadsheet, Plus, AlertCircle, CheckCircle, Info, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,8 +39,10 @@ export default function Page() {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
 
   const loadStructureSheet = useCallback(async () => {
+    console.log('Loading structure sheet...');
     try {
       const response = await fetch('/api/payroll/structure');
+      console.log('Structure sheet response status:', response.status);
       if (!response.ok) throw new Error('Failed to load structure sheet');
       const data = await response.json();
       setStructureSheet(data.structure);
@@ -57,6 +59,8 @@ export default function Page() {
     const uploadedFile = event.target.files?.[0];
     if (!uploadedFile) return;
 
+    console.log('File selected:', uploadedFile.name, uploadedFile.size);
+
     setFile(uploadedFile);
     setLoading(true);
     setSummary(null);
@@ -71,7 +75,13 @@ export default function Page() {
         body: formData,
       });
 
-      if (!response.ok) throw new Error('Processing failed');
+      console.log('Response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(`Processing failed: ${errorData.error}`);
+      }
 
       const data = await response.json();
       setStructureSheet(data.structure);
@@ -141,9 +151,9 @@ export default function Page() {
     }
   }, [toast]);
 
-  useState(() => {
+  useEffect(() => {
     loadStructureSheet();
-  });
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
